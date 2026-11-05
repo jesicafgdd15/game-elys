@@ -1,0 +1,815 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Pulau Ilmu</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Lilita+One&display=swap">
+<style>
+/* Layout: satu kolom. Peta pelayaran berbentuk SVG vertikal dengan enam pulau berkelok; pulau dan pos dibuka sebagai layar bergantian di tempat yang sama. Tampilan malam dipilih sengaja. */
+:root {
+  --bg: #0a1b2b;
+  --sea: #0f2b44;
+  --sea-2: #163a59;
+  --foam: #eaf4f8;
+  --dim: #93b2c4;
+  --line: #27506f;
+  --gold: #ffc83d;
+  --gold-ink: #241a00;
+  --good: #6fe0a0;
+  --miss: #f4a3ad;
+  --t-laut: #4aa3e8;
+  --t-angkasa: #9b8cf2;
+  --t-hutan: #4cc388;
+  --t-tubuh: #f07b8e;
+  --t-hewan: #f2a24d;
+  --t-bumi: #3cc7bf;
+  --font-display: "Lilita One", "Trebuchet MS", sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--foam);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.55;
+  padding-block: 28px 80px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 400; line-height: 1.1; margin: 0; text-wrap: balance; letter-spacing: .01em; }
+h1 { font-size: clamp(2.8rem, 10vw, 4.2rem); color: var(--gold); }
+h2 { font-size: 2.2rem; }
+h3 { font-size: 1.7rem; }
+p { margin: 0; }
+.lead { color: var(--dim); margin-top: 8px; max-width: 54ch; }
+.muted { color: var(--dim); }
+
+.top { display: flex; flex-direction: column; gap: 18px; }
+.hud { display: flex; flex-wrap: wrap; gap: 10px 32px; }
+.stat { display: flex; flex-direction: column; min-width: 0; }
+.stat small { font-size: .75rem; text-transform: uppercase; letter-spacing: .12em; color: var(--dim); }
+.stat strong { font-family: var(--font-display); font-weight: 400; font-size: 1.8rem; line-height: 1.15; font-variant-numeric: tabular-nums; }
+#h-stars { color: var(--gold); }
+
+.btn {
+  font-family: var(--font-body); font-weight: 700; font-size: 1rem; min-height: 46px; padding: 8px 18px;
+  border: 2px solid var(--gold); border-radius: 12px; background: var(--gold); color: var(--gold-ink); cursor: pointer;
+}
+.btn:hover { filter: brightness(1.07); }
+.btn.ghost { background: transparent; color: var(--foam); border-color: var(--line); }
+.btn:disabled { opacity: .5; cursor: default; filter: none; }
+.btn:focus-visible, .opt:focus-visible, .node:focus-visible, h2:focus-visible, h3:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 10px; }
+
+/* Peta */
+.map-wrap { background: var(--sea); border-radius: 20px; padding: 12px 8px; box-shadow: 0 0 0 2px var(--line); }
+#map { width: 100%; max-width: 460px; height: auto; display: block; margin: 0 auto; overflow: visible; }
+.node { cursor: pointer; }
+.node.locked { cursor: not-allowed; }
+.node text { font-family: var(--font-body); }
+.node .num { font-family: var(--font-display); }
+
+/* Pulau */
+.view { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.pos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.pos li { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.pos-n { font-family: var(--font-display); font-size: 1.6rem; width: 36px; color: var(--tc); }
+.pos-t { flex: 1 1 180px; min-width: 0; display: flex; flex-direction: column; }
+.pos-t strong { font-size: 1.1rem; }
+.pos-t small { color: var(--dim); font-size: .9rem; }
+.pos-t small.ok { color: var(--gold); font-weight: 700; }
+.pos-t small.miss { color: var(--miss); }
+
+/* Pos */
+.card { background: var(--sea); border-radius: 20px; padding: 22px 20px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 0 0 2px var(--line); min-width: 0; }
+.card .eyebrow { font-size: .8rem; text-transform: uppercase; letter-spacing: .12em; color: var(--dim); }
+.card .title { color: var(--tc); }
+.fact-text { font-size: clamp(1.2rem, 4.2vw, 1.5rem); line-height: 1.4; font-weight: 700; max-width: 40ch; }
+.why { background: var(--sea-2); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; max-width: 60ch; }
+.why strong { font-family: var(--font-display); font-weight: 400; font-size: 1.2rem; }
+.qtext { font-size: clamp(1.2rem, 4.2vw, 1.5rem); font-weight: 700; line-height: 1.35; max-width: 40ch; }
+.opts { display: flex; flex-direction: column; gap: 10px; }
+.opt { min-height: 52px; text-align: left; padding: 10px 16px; font: inherit; font-weight: 700; color: var(--foam); background: var(--sea-2); border: 2px solid var(--line); border-radius: 12px; cursor: pointer; }
+.opt:hover:not(:disabled) { border-color: var(--tc); }
+.opt:disabled { cursor: default; opacity: 1; }
+.opt.right { border-color: var(--good); box-shadow: inset 0 0 0 2px var(--good); }
+.opt.wrong { border-style: dashed; color: var(--dim); }
+.res { font-family: var(--font-display); font-size: 1.6rem; }
+.res.ok { color: var(--gold); }
+.res.no { color: var(--miss); }
+.foot { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; color: var(--dim); font-size: .9rem; }
+.link { background: none; border: 0; padding: 8px 0; min-height: 44px; font: inherit; color: var(--dim); text-decoration: underline; cursor: pointer; }
+.link:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+.btn.big { font-size: 1.25rem; min-height: 54px; padding: 10px 30px; }
+.sum { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.sum li { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.sum li strong { color: var(--tc); font-variant-numeric: tabular-nums; }
+#toast {
+  position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 24px); opacity: 0; pointer-events: none;
+  background: var(--foam); color: var(--bg); padding: 12px 18px; border-radius: 14px; width: max-content; max-width: calc(100% - 32px); font-weight: 700; text-align: center;
+  transition: opacity .2s, transform .2s; z-index: 20;
+}
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+@media (max-width: 420px) { .card { padding: 18px 16px; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+
+<main class="wrap">
+  <header class="top">
+    <div>
+      <h1>Pulau Ilmu</h1>
+      <p class="lead">Berlayar ke enam pulau kebiasaan belajar. Baca kartu di setiap pos, lalu jawab soal tentang cara belajar yang baik. Bintang hanya untuk jawaban yang benar, dan dua bintang membuka pulau berikutnya.</p>
+    </div>
+    <div class="hud">
+      <div class="stat"><small>Bintang</small><strong id="h-stars">0/24</strong></div>
+      <div class="stat"><small>Pangkat</small><strong id="h-rank">Pelaut Baru</strong></div>
+    </div>
+  </header>
+
+  <section id="v-start" class="view"></section>
+  <section id="v-end" class="view" hidden></section>
+  <section id="v-map" class="view" aria-label="Peta pulau" hidden>
+    <div class="map-wrap"><svg id="map" viewBox="0 0 400 720" role="group" aria-label="Peta enam pulau"></svg></div>
+    <div class="foot">
+      <span>Ketuk pulau untuk berlayar.</span>
+      <span id="reset-area"></span>
+    </div>
+  </section>
+  <section id="v-island" class="view" hidden></section>
+  <section id="v-stage" class="view" hidden></section>
+</main>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  var KEY = "pulau-ilmu-v2";
+  var TOPICS = {
+    penasaran: { name: "Penasaran", c: "--t-laut" },
+    mencoba: { name: "Berani Mencoba", c: "--t-angkasa" },
+    rajin: { name: "Rajin Belajar", c: "--t-hutan" },
+    membaca: { name: "Gemar Membaca", c: "--t-tubuh" },
+    bertanya: { name: "Berani Bertanya", c: "--t-hewan" },
+    berbagi: { name: "Saling Berbagi", c: "--t-bumi" }
+  };
+  var ORDER = ["penasaran", "mencoba", "rajin", "membaca", "bertanya", "berbagi"];
+  var NEED = 2;
+  var RANKS = [[0, "Pelaut Baru"], [4, "Penjelajah Pulau"], [8, "Navigator"], [14, "Kapten Ilmu"], [20, "Penguasa Pulau Ilmu"]];
+
+  var FACTS = [
+    {
+      "id": "penasaran-1",
+      "t": "penasaran",
+      "title": "Bertanya kenapa",
+      "text": "Rasa penasaran adalah awal dari belajar. Setiap kali kamu bertanya \"kenapa?\", otakmu siap menerima hal baru.",
+      "why": "Saat penasaran, kita lebih memperhatikan dan lebih mudah mengingat jawabannya."
+    },
+    {
+      "id": "penasaran-2",
+      "t": "penasaran",
+      "title": "Mengamati",
+      "text": "Belajar bisa dimulai dari mengamati sekitar. Lihat, dengar, dan catat hal yang menarik perhatianmu.",
+      "why": "Pengamatan yang teliti memberi bahan untuk pertanyaan dan penemuan baru."
+    },
+    {
+      "id": "penasaran-3",
+      "t": "penasaran",
+      "title": "Mencari jawaban",
+      "text": "Kalau punya pertanyaan, jangan berhenti. Carilah jawabannya dari buku, guru, atau orang yang paham.",
+      "why": "Mencari jawaban sendiri melatih kita menemukan sumber yang bisa dipercaya."
+    },
+    {
+      "id": "penasaran-4",
+      "t": "penasaran",
+      "title": "Penasaran itu hebat",
+      "text": "Orang yang suka bertanya bukan berarti kurang pintar. Justru mereka sedang belajar lebih banyak.",
+      "why": "Banyak penemuan besar berawal dari seseorang yang bertanya sesuatu yang belum dijawab orang lain."
+    },
+    {
+      "id": "mencoba-1",
+      "t": "mencoba",
+      "title": "Salah itu biasa",
+      "text": "Membuat kesalahan adalah bagian dari belajar. Dari salah, kita tahu bagian mana yang perlu diperbaiki.",
+      "why": "Kesalahan menunjukkan bagian yang belum kita pahami, jadi kita tahu harus belajar apa."
+    },
+    {
+      "id": "mencoba-2",
+      "t": "mencoba",
+      "title": "Belum bisa",
+      "text": "Kalau sesuatu masih sulit, katakan \"aku belum bisa\", bukan \"aku tidak bisa\". Dengan latihan, kamu akan bisa.",
+      "why": "Kata \"belum\" mengingatkan kita bahwa kemampuan bisa tumbuh lewat latihan."
+    },
+    {
+      "id": "mencoba-3",
+      "t": "mencoba",
+      "title": "Jangan menyerah",
+      "text": "Hal yang sulit sering butuh beberapa kali percobaan. Berhenti terlalu cepat membuat kita tidak pernah tahu hasilnya.",
+      "why": "Setiap percobaan memberi petunjuk baru, bahkan ketika belum berhasil."
+    },
+    {
+      "id": "mencoba-4",
+      "t": "mencoba",
+      "title": "Merayakan kemajuan",
+      "text": "Lihat seberapa jauh kamu sudah maju, sekecil apa pun. Kemajuan kecil yang rutin lama-lama menjadi besar.",
+      "why": "Menyadari kemajuan membuat kita bersemangat untuk terus berlatih."
+    },
+    {
+      "id": "rajin-1",
+      "t": "rajin",
+      "title": "Sedikit tapi rutin",
+      "text": "Belajar sedikit setiap hari lebih baik daripada belajar sangat lama hanya sekali.",
+      "why": "Mengulang secara teratur membantu ingatan bertahan lebih lama daripada belajar sekaligus."
+    },
+    {
+      "id": "rajin-2",
+      "t": "rajin",
+      "title": "Jam belajar tetap",
+      "text": "Menentukan jam belajar yang sama setiap hari membuat belajar terasa seperti kebiasaan, bukan beban.",
+      "why": "Kebiasaan yang diulang pada waktu yang sama makin lama makin otomatis."
+    },
+    {
+      "id": "rajin-3",
+      "t": "rajin",
+      "title": "Fokus tanpa gangguan",
+      "text": "Saat belajar, jauhkan hal yang mengganggu seperti ponsel atau televisi supaya perhatianmu penuh.",
+      "why": "Otak sulit memperhatikan dua hal sekaligus, jadi gangguan membuat belajar lebih lama dan kurang paham."
+    },
+    {
+      "id": "rajin-4",
+      "t": "rajin",
+      "title": "Istirahat sebentar",
+      "text": "Setelah belajar beberapa saat, istirahatlah sebentar. Otak yang segar lebih mudah memahami pelajaran.",
+      "why": "Istirahat singkat membantu menjaga perhatian dan mencegah kelelahan."
+    },
+    {
+      "id": "membaca-1",
+      "t": "membaca",
+      "title": "Buku membuka dunia",
+      "text": "Buku membawamu ke tempat, cerita, dan ilmu yang belum pernah kamu kunjungi.",
+      "why": "Membaca menambah kosakata dan pengetahuan, dua hal yang membantu di semua pelajaran."
+    },
+    {
+      "id": "membaca-2",
+      "t": "membaca",
+      "title": "Mulai dari yang kamu suka",
+      "text": "Mulailah membaca buku tentang hal yang kamu sukai, misalnya hewan, luar angkasa, atau petualangan.",
+      "why": "Topik yang kita sukai membuat membaca terasa menyenangkan, sehingga kita betah membaca lebih lama."
+    },
+    {
+      "id": "membaca-3",
+      "t": "membaca",
+      "title": "Beberapa menit saja",
+      "text": "Membaca 10 sampai 15 menit setiap hari sudah cukup untuk membangun kebiasaan.",
+      "why": "Target yang kecil lebih mudah dijaga setiap hari."
+    },
+    {
+      "id": "membaca-4",
+      "t": "membaca",
+      "title": "Menceritakan kembali",
+      "text": "Setelah membaca, coba ceritakan kembali isinya dengan kata-katamu sendiri.",
+      "why": "Menceritakan ulang menunjukkan apakah kita benar-benar paham dan membantu kita mengingat."
+    },
+    {
+      "id": "bertanya-1",
+      "t": "bertanya",
+      "title": "Tanya kalau belum paham",
+      "text": "Kalau belum paham, bertanyalah kepada guru atau orang tua. Satu pertanyaan bisa menyelamatkanmu dari bingung berhari-hari.",
+      "why": "Kebingungan yang dibiarkan membuat pelajaran berikutnya makin sulit."
+    },
+    {
+      "id": "bertanya-2",
+      "t": "bertanya",
+      "title": "Pertanyaan yang jelas",
+      "text": "Pertanyaan yang jelas membantu orang menjawabmu dengan tepat. Sebutkan bagian mana yang belum kamu pahami.",
+      "why": "Orang yang kita tanyai bisa langsung membantu di bagian yang bermasalah."
+    },
+    {
+      "id": "bertanya-3",
+      "t": "bertanya",
+      "title": "Mendengarkan jawaban",
+      "text": "Saat guru atau teman menjawab, dengarkan sampai selesai dan catat hal pentingnya.",
+      "why": "Mendengarkan dengan baik membuat jawaban benar-benar terpakai untuk belajar."
+    },
+    {
+      "id": "bertanya-4",
+      "t": "bertanya",
+      "title": "Berani bertanya",
+      "text": "Butuh keberanian untuk bertanya di depan orang lain. Orang yang berani bertanya sering membantu teman lain yang juga belum paham.",
+      "why": "Biasanya ada teman yang punya pertanyaan sama tetapi belum berani menanyakannya."
+    },
+    {
+      "id": "berbagi-1",
+      "t": "berbagi",
+      "title": "Belajar bersama",
+      "text": "Belajar bersama teman bisa membuat pelajaran lebih seru dan lebih mudah dipahami.",
+      "why": "Saat berdiskusi, kita mendengar cara pandang lain dan bisa saling melengkapi."
+    },
+    {
+      "id": "berbagi-2",
+      "t": "berbagi",
+      "title": "Mengajar itu belajar",
+      "text": "Saat menjelaskan sesuatu kepada orang lain, kamu justru makin paham pelajarannya.",
+      "why": "Menjelaskan memaksa kita menyusun pengetahuan dengan jelas dan menemukan bagian yang belum kita kuasai."
+    },
+    {
+      "id": "berbagi-3",
+      "t": "berbagi",
+      "title": "Menghargai teman",
+      "text": "Teman yang bertanya hal sederhana tetap pantas dihargai. Jangan menertawakannya.",
+      "why": "Suasana yang aman membuat semua orang berani bertanya dan mencoba."
+    },
+    {
+      "id": "berbagi-4",
+      "t": "berbagi",
+      "title": "Berbagi ilmu",
+      "text": "Ilmu yang dibagikan tidak berkurang. Menceritakan hal baru yang kamu pelajari bisa membuat orang lain ikut gemar belajar.",
+      "why": "Berbagi membuat kita mengingat lebih baik dan menularkan semangat belajar."
+    }
+  ];
+  var QS = {
+    "penasaran-1": {
+      "q": "Kamu melihat pelangi dan penasaran kenapa bisa muncul. Apa yang sebaiknya kamu lakukan?",
+      "o": [
+        "Mencari tahu jawabannya dari buku atau bertanya",
+        "Melupakannya karena bukan tugas sekolah",
+        "Pura-pura sudah tahu supaya tidak malu"
+      ],
+      "a": 0
+    },
+    "penasaran-2": {
+      "q": "Kamu ingin tahu kenapa daun di halaman menguning. Apa langkah pertama yang tepat?",
+      "o": [
+        "Memetik semua daunnya",
+        "Mengamati daunnya dengan teliti",
+        "Menunggu sampai ada yang bercerita"
+      ],
+      "a": 1
+    },
+    "penasaran-3": {
+      "q": "Kamu penasaran kenapa air laut asin. Cara mana yang terbaik untuk mencari tahu?",
+      "o": [
+        "Menebak saja lalu menganggapnya benar",
+        "Menunggu sampai lupa",
+        "Membaca buku atau bertanya kepada guru"
+      ],
+      "a": 2
+    },
+    "penasaran-4": {
+      "q": "Temanmu berkata, \"Jangan banyak tanya, nanti dikira bodoh.\" Tanggapan mana yang tepat?",
+      "o": [
+        "Betul, lebih baik diam saja",
+        "Bertanya itu tanda ingin belajar, jadi aku tetap bertanya",
+        "Bertanya hanya boleh saat ujian"
+      ],
+      "a": 1
+    },
+    "mencoba-1": {
+      "q": "Nilai ulanganmu kurang bagus. Apa yang sebaiknya kamu lakukan?",
+      "o": [
+        "Memeriksa bagian yang salah lalu belajar lagi",
+        "Berhenti belajar pelajaran itu",
+        "Menyalahkan soalnya"
+      ],
+      "a": 0
+    },
+    "mencoba-2": {
+      "q": "Kamu belum lancar perkalian. Kalimat mana yang paling membantumu belajar?",
+      "o": [
+        "Aku memang tidak bisa matematika",
+        "Perkalian itu tidak penting",
+        "Aku belum bisa, jadi aku akan berlatih"
+      ],
+      "a": 2
+    },
+    "mencoba-3": {
+      "q": "Kamu gagal mengikat tali sepatu tiga kali. Apa yang sebaiknya kamu lakukan?",
+      "o": [
+        "Memutuskan tidak akan pernah bisa",
+        "Mencoba lagi sambil memperhatikan caranya",
+        "Membuang sepatunya"
+      ],
+      "a": 1
+    },
+    "mencoba-4": {
+      "q": "Bulan lalu kamu hanya bisa membaca 2 halaman, sekarang sudah 5 halaman. Sikap mana yang tepat?",
+      "o": [
+        "Senang dengan kemajuan itu dan terus berlatih",
+        "Menganggapnya belum apa-apa",
+        "Berhenti karena merasa sudah cukup"
+      ],
+      "a": 0
+    },
+    "rajin-1": {
+      "q": "Cara mana yang lebih baik untuk mengingat pelajaran?",
+      "o": [
+        "Belajar 3 jam hanya semalam sebelum ujian",
+        "Belajar 20 menit setiap hari",
+        "Tidak belajar sampai ujian tiba"
+      ],
+      "a": 1
+    },
+    "rajin-2": {
+      "q": "Apa yang bisa membantumu membangun kebiasaan belajar?",
+      "o": [
+        "Belajar kalau sedang ingat saja",
+        "Menunda sampai besok",
+        "Menentukan waktu belajar yang sama setiap hari"
+      ],
+      "a": 2
+    },
+    "rajin-3": {
+      "q": "Kamu sedang belajar, tetapi ponselmu terus berbunyi. Apa yang sebaiknya dilakukan?",
+      "o": [
+        "Membuka semua pesan sambil belajar",
+        "Menyimpan ponsel jauh selama belajar",
+        "Belajar sambil menonton televisi"
+      ],
+      "a": 1
+    },
+    "rajin-4": {
+      "q": "Kamu sudah belajar cukup lama dan mulai lelah. Langkah mana yang tepat?",
+      "o": [
+        "Istirahat sebentar, lalu lanjut belajar",
+        "Memaksa terus tanpa istirahat sampai pagi",
+        "Tidak belajar lagi selama seminggu"
+      ],
+      "a": 0
+    },
+    "membaca-1": {
+      "q": "Apa manfaat membaca buku secara rutin?",
+      "o": [
+        "Tugas sekolah selesai dengan sendirinya",
+        "Kosakata dan pengetahuan bertambah",
+        "Tidak ada manfaatnya"
+      ],
+      "a": 1
+    },
+    "membaca-2": {
+      "q": "Kamu belum suka membaca. Cara awal mana yang tepat?",
+      "o": [
+        "Memaksa diri membaca buku tebal yang tidak menarik",
+        "Hanya membaca saat disuruh",
+        "Memilih buku tentang hal yang kamu sukai"
+      ],
+      "a": 2
+    },
+    "membaca-3": {
+      "q": "Target membaca mana yang paling mudah dijaga setiap hari?",
+      "o": [
+        "Sepuluh buku sehari",
+        "Satu buku setahun sekali",
+        "Sepuluh menit sehari"
+      ],
+      "a": 2
+    },
+    "membaca-4": {
+      "q": "Apa yang bisa kamu lakukan setelah membaca supaya lebih ingat isinya?",
+      "o": [
+        "Menceritakan kembali dengan kata-katamu sendiri",
+        "Langsung melupakannya",
+        "Menutup buku dan tidak membahasnya"
+      ],
+      "a": 0
+    },
+    "bertanya-1": {
+      "q": "Kamu belum paham penjelasan guru. Apa yang sebaiknya dilakukan?",
+      "o": [
+        "Diam dan berharap nanti paham sendiri",
+        "Menyalin jawaban teman",
+        "Mengangkat tangan dan bertanya"
+      ],
+      "a": 2
+    },
+    "bertanya-2": {
+      "q": "Pertanyaan mana yang paling jelas?",
+      "o": [
+        "Aku belum paham langkah kedua cara membagi ini.",
+        "Aku nggak ngerti semuanya.",
+        "Ini susah."
+      ],
+      "a": 0
+    },
+    "bertanya-3": {
+      "q": "Setelah bertanya, apa yang sebaiknya kamu lakukan?",
+      "o": [
+        "Mengobrol dengan teman lain",
+        "Mendengarkan jawabannya dan mencatat hal pentingnya",
+        "Pergi sebelum dijawab"
+      ],
+      "a": 1
+    },
+    "bertanya-4": {
+      "q": "Kamu malu bertanya di kelas. Apa yang bisa kamu lakukan?",
+      "o": [
+        "Menahan pertanyaan selamanya",
+        "Menganggap pelajaran itu tidak penting",
+        "Menuliskan pertanyaannya lalu menanyakannya kepada guru"
+      ],
+      "a": 2
+    },
+    "berbagi-1": {
+      "q": "Apa manfaat belajar kelompok yang baik?",
+      "o": [
+        "Bisa saling membantu memahami pelajaran",
+        "Bisa menyalin pekerjaan satu sama lain",
+        "Bisa mengobrol sepanjang waktu"
+      ],
+      "a": 0
+    },
+    "berbagi-2": {
+      "q": "Cara mana yang membantumu makin paham pelajaran?",
+      "o": [
+        "Menghafal tanpa pernah menjelaskan",
+        "Melewatkan bagian yang sulit",
+        "Menjelaskannya kepada adik atau teman"
+      ],
+      "a": 2
+    },
+    "berbagi-3": {
+      "q": "Temanmu bertanya hal yang menurutmu mudah. Apa yang tepat kamu lakukan?",
+      "o": [
+        "Menertawakannya",
+        "Menjelaskan dengan sabar",
+        "Pura-pura tidak mendengar"
+      ],
+      "a": 1
+    },
+    "berbagi-4": {
+      "q": "Kamu baru tahu fakta menarik tentang gurita. Apa yang bisa kamu lakukan?",
+      "o": [
+        "Menyimpannya sendiri supaya tidak ada yang tahu",
+        "Melupakannya",
+        "Menceritakannya kepada teman atau keluarga"
+      ],
+      "a": 2
+    }
+  };
+
+  var FACT_BY_ID = {};
+  FACTS.forEach(function (f) { FACT_BY_ID[f.id] = f; });
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function today() {
+    var d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function shuffle(a) {
+    a = a.slice();
+    for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var x = a[i]; a[i] = a[j]; a[j] = x; }
+    return a;
+  }
+
+  /* Data tersimpan: bintang["id"] = { s: "ok" } atau { s: "miss", d: "tanggal" } */
+  function load() {
+    try {
+      var raw = JSON.parse(localStorage.getItem(KEY));
+      if (raw && typeof raw === "object" && raw.stars && typeof raw.stars === "object") return raw;
+    } catch (e) {}
+    return { stars: {} };
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+  var S = load();
+  var V = { view: "start", topic: null, id: null, step: "read", why: false, order: null, picked: null, right: false, confirmReset: false };
+  var focusKey = null, focusHeading = false;
+
+  function topicFacts(t) { return FACTS.filter(function (f) { return f.t === t; }); }
+  function statusOf(id) {
+    var v = S.stars[id];
+    if (!v) return "open";
+    if (v.s === "ok") return "ok";
+    return v.d === today() ? "miss" : "open";
+  }
+  function starsOf(t) { return topicFacts(t).filter(function (f) { return statusOf(f.id) === "ok"; }).length; }
+  function totalStars() { return FACTS.filter(function (f) { return statusOf(f.id) === "ok"; }).length; }
+  function unlocked(i) { return i === 0 || starsOf(ORDER[i - 1]) >= NEED; }
+  function rankFor(n) { var r = RANKS[0][1]; RANKS.forEach(function (x) { if (n >= x[0]) r = x[1]; }); return r; }
+
+  /* Peta */
+  var NODES = [{ x: 100, y: 80 }, { x: 300, y: 190 }, { x: 100, y: 300 }, { x: 300, y: 410 }, { x: 100, y: 520 }, { x: 300, y: 630 }];
+  function starPts(cx, cy, r) {
+    var p = [];
+    for (var i = 0; i < 10; i++) {
+      var a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.45 : r;
+      p.push((cx + rr * Math.cos(a)).toFixed(1) + "," + (cy + rr * Math.sin(a)).toFixed(1));
+    }
+    return p.join(" ");
+  }
+  function renderMap() {
+    var s = "";
+    for (var i = 0; i < NODES.length - 1; i++) {
+      var a = NODES[i], b = NODES[i + 1], ym = (a.y + b.y) / 2;
+      var open = unlocked(i + 1);
+      s += '<path d="M' + a.x + " " + a.y + " C" + a.x + " " + ym + " " + b.x + " " + ym + " " + b.x + " " + b.y + '" fill="none" stroke="' +
+        (open ? "var(--gold)" : "var(--line)") + '" stroke-width="' + (open ? 4 : 3) + '" stroke-linecap="round"' + (open ? "" : ' stroke-dasharray="2 10"') + "/>";
+    }
+    ORDER.forEach(function (t, i) {
+      var n = NODES[i], open = unlocked(i), got = starsOf(t), col = "var(" + TOPICS[t].c + ")";
+      var label = "Pulau " + TOPICS[t].name + ", " + got + " dari 4 bintang" + (open ? "" : ", terkunci");
+      s += '<g class="node' + (open ? "" : " locked") + '" data-act="island" data-t="' + t + '" role="button" tabindex="0" aria-label="' + esc(label) + '"' + (open ? "" : ' aria-disabled="true"') + ">";
+      s += '<circle cx="' + n.x + '" cy="' + n.y + '" r="40" fill="' + (open ? col : "var(--sea-2)") + '" stroke="' + (open ? "var(--foam)" : "var(--line)") + '" stroke-width="3"' + (open ? "" : ' stroke-dasharray="6 6"') + "/>";
+      if (open) {
+        s += '<text class="num" x="' + n.x + '" y="' + (n.y + 11) + '" text-anchor="middle" font-size="32" fill="#0a1b2b">' + (i + 1) + "</text>";
+      } else {
+        s += '<g transform="translate(' + n.x + " " + (n.y + 2) + ')"><rect x="-10" y="-2" width="20" height="15" rx="3" fill="var(--dim)"/><path d="M-6 -2 V-8 a6 6 0 0 1 12 0 V-2" fill="none" stroke="var(--dim)" stroke-width="3"/></g>';
+      }
+      if (got === 4) s += '<path transform="translate(' + n.x + " " + (n.y - 52) + ')" d="M-13 0 L-9 -13 L0 -5 L9 -13 L13 0Z" fill="var(--gold)"/>';
+      s += '<text x="' + n.x + '" y="' + (n.y + 64) + '" text-anchor="middle" font-size="17" font-weight="700" fill="' + (open ? "var(--foam)" : "var(--dim)") + '">' + esc(TOPICS[t].name) + "</text>";
+      for (var k = 0; k < 4; k++) {
+        var sx = n.x - 30 + k * 20, sy = n.y + 82;
+        s += '<polygon points="' + starPts(sx, sy, 8) + '" ' + (k < got ? 'fill="var(--gold)" stroke="var(--gold)"' : 'fill="none" stroke="var(--dim)"') + ' stroke-width="1.5" stroke-linejoin="round"/>';
+      }
+      s += "</g>";
+    });
+    $("map").innerHTML = s;
+    $("reset-area").innerHTML = '<button class="btn" type="button" data-act="finish" data-key="finish">Selesai</button>';
+  }
+
+  function renderHud() {
+    var n = totalStars();
+    $("h-stars").textContent = n + "/" + FACTS.length;
+    $("h-rank").textContent = rankFor(n);
+  }
+
+  /* Layar pulau */
+  function renderIsland() {
+    var t = V.topic, list = topicFacts(t), got = starsOf(t), i = ORDER.indexOf(t);
+    var nextName = i < ORDER.length - 1 ? TOPICS[ORDER[i + 1]].name : null;
+    var h = '<div><button class="btn ghost" type="button" data-act="back-map" data-key="back-map">Kembali ke peta</button></div>' +
+      '<div style="--tc:var(' + TOPICS[t].c + ')"><h2 id="view-h" tabindex="-1" style="color:var(--tc)">Pulau ' + esc(TOPICS[t].name) + "</h2>" +
+      '<p class="lead">' + got + " dari 4 bintang." + (nextName ? (got >= NEED ? " Pulau " + esc(nextName) + " sudah terbuka." : " Kumpulkan " + NEED + " bintang untuk membuka Pulau " + esc(nextName) + ".") : " Ini pulau terakhir.") + "</p></div>" +
+      '<ol class="pos" style="--tc:var(' + TOPICS[t].c + ')">';
+    list.forEach(function (f, k) {
+      var st = statusOf(f.id);
+      var info = st === "ok" ? '<small class="ok">Bintang didapat</small>' : st === "miss" ? '<small class="miss">Jawabanmu belum tepat. Coba lagi besok.</small>' : "<small>Belum dijawab</small>";
+      h += '<li><span class="pos-n">' + (k + 1) + '</span><div class="pos-t"><strong>' + esc(f.title) + "</strong>" + info + "</div>" +
+        '<button class="btn' + (st === "open" ? "" : " ghost") + '" type="button" data-act="start" data-id="' + f.id + '" data-key="start-' + f.id + '">' + (st === "open" ? "Mulai pos" : "Baca lagi") + "</button></li>";
+    });
+    $("v-island").innerHTML = h + "</ol>";
+  }
+
+  /* Layar pos */
+  function renderStage() {
+    var f = FACT_BY_ID[V.id], t = f.t, list = topicFacts(t), idx = list.indexOf(f), st = statusOf(f.id), q = QS[f.id];
+    var h = '<div><button class="btn ghost" type="button" data-act="back-island" data-key="back-island">Kembali ke pulau</button></div>' +
+      '<article class="card" style="--tc:var(' + TOPICS[t].c + ')">' +
+      '<p class="eyebrow">Pulau ' + esc(TOPICS[t].name) + " &middot; pos " + (idx + 1) + " dari " + list.length + "</p>";
+    if (V.step === "read") {
+      h += '<h3 id="view-h" tabindex="-1" class="title">' + esc(f.title) + '</h3><p class="fact-text">' + esc(f.text) + "</p>";
+      if (V.why) h += '<div class="why"><strong>Kenapa begitu?</strong><p>' + esc(f.why) + "</p></div>";
+      h += '<div class="btn-row"><button class="btn ghost" type="button" data-act="why" data-key="why">' + (V.why ? "Sembunyikan penjelasan" : "Kenapa begitu?") + "</button>";
+      if (st === "open") h += '<button class="btn" type="button" data-act="test" data-key="test">Aku siap dites</button>';
+      h += "</div>";
+      if (st === "ok") h += '<p class="muted">Bintang pos ini sudah kamu dapat.</p>';
+      if (st === "miss") h += '<p class="muted">Jawabanmu di pos ini belum tepat hari ini. Baca lagi baik-baik, besok kamu bisa mencoba lagi.</p>';
+    } else {
+      h += '<h3 id="view-h" tabindex="-1" class="title">Tes pos: ' + esc(f.title) + '</h3><p class="qtext">' + esc(q.q) + '</p><div class="opts">';
+      V.order.forEach(function (oi, k) {
+        var cls = "opt", mark = "";
+        if (V.picked !== null) {
+          if (oi === q.a) { cls += " right"; mark = " (benar)"; }
+          else if (k === V.picked) { cls += " wrong"; mark = " (pilihanmu)"; }
+        }
+        h += '<button class="' + cls + '" type="button" data-act="answer" data-o="' + k + '" data-key="opt-' + k + '"' + (V.picked !== null ? " disabled" : "") + ">" + esc(q.o[oi] + mark) + "</button>";
+      });
+      h += "</div>";
+      if (V.picked !== null) {
+        h += '<p class="res ' + (V.right ? "ok" : "no") + '">' + (V.right ? "Tepat! +1 bintang" : "Belum tepat. Tidak ada bintang.") + "</p>" +
+          '<div class="why"><strong>Kenapa begitu?</strong><p>' + esc(f.why) + "</p></div>";
+        var more = idx < list.length - 1;
+        h += '<div class="btn-row">' + (more ? '<button class="btn" type="button" data-act="next" data-key="next">Pos berikutnya</button>' : "") +
+          '<button class="btn ' + (more ? "ghost" : "") + '" type="button" data-act="back-island" data-key="done">Kembali ke pulau</button></div>';
+      }
+    }
+    $("v-stage").innerHTML = h + "</article>";
+  }
+
+  /* Layar awal dan layar hasil */
+  function renderStart() {
+    var n = totalStars(), has = Object.keys(S.stars).length > 0;
+    var h = '<div class="card"><h2 id="view-h" tabindex="-1">Siap berlayar?</h2>' +
+      '<p class="lead" style="margin-top:0">Baca kartu di setiap pos, lalu jawab soalnya. Bintang hanya untuk jawaban yang benar. Tekan Selesai kapan saja untuk melihat hasil pelayaranmu.</p>' +
+      '<div class="btn-row"><button class="btn big" type="button" data-act="begin" data-key="begin">' + (has ? "Lanjutkan" : "Mulai") + "</button>";
+    if (has && !V.confirmReset) h += '<button class="btn ghost" type="button" data-act="reset" data-key="reset">Mulai dari awal</button>';
+    h += "</div>";
+    if (has && V.confirmReset) h += '<p>Hapus semua bintang dan mulai dari awal? <button class="link" type="button" data-act="reset-yes" data-key="reset-yes">Ya, hapus</button> <button class="link" type="button" data-act="reset-no" data-key="reset-no">Batal</button></p>';
+    if (has) h += '<p class="muted">Kamu punya ' + n + " bintang tersimpan dari pelayaran sebelumnya.</p>";
+    $("v-start").innerHTML = h + "</div>";
+  }
+  function renderEnd() {
+    var n = totalStars();
+    var misses = FACTS.filter(function (f) { return statusOf(f.id) === "miss"; }).length;
+    var h = '<div class="card"><p class="eyebrow">Pelayaran selesai</p><h2 id="view-h" tabindex="-1">' + esc(rankFor(n)) + "</h2>" +
+      '<p class="res ok">' + n + " dari " + FACTS.length + " bintang</p><ul class=\"sum\">";
+    ORDER.forEach(function (t) {
+      h += '<li style="--tc:var(' + TOPICS[t].c + ')"><span>Pulau ' + esc(TOPICS[t].name) + "</span><strong>" + starsOf(t) + "/4</strong></li>";
+    });
+    h += "</ul>";
+    if (misses) h += '<p class="muted">' + misses + " pos belum tepat hari ini. Baca lagi kartunya dan coba besok.</p>";
+    h += '<div class="btn-row"><button class="btn" type="button" data-act="again" data-key="again">Main lagi</button>' +
+      '<button class="btn ghost" type="button" data-act="back-map" data-key="back-map">Kembali ke peta</button></div>' +
+      '<p class="muted">Main lagi menyegarkan game: semua bintang dihapus dan kamu mulai dari awal.</p></div>';
+    $("v-end").innerHTML = h;
+  }
+
+  function renderAll() {
+    renderHud();
+    $("v-start").hidden = V.view !== "start";
+    $("v-end").hidden = V.view !== "end";
+    $("v-map").hidden = V.view !== "map";
+    $("v-island").hidden = V.view !== "island";
+    $("v-stage").hidden = V.view !== "stage";
+    if (V.view === "map") renderMap();
+    if (V.view === "island") renderIsland();
+    if (V.view === "stage") renderStage();
+    if (V.view === "start") renderStart();
+    if (V.view === "end") renderEnd();
+    if (focusHeading) {
+      var hd = $("view-h");
+      if (hd) hd.focus();
+      focusHeading = false;
+    } else if (focusKey) {
+      var el = document.querySelector('[data-key="' + focusKey + '"]');
+      if (el && !el.disabled) el.focus();
+    }
+    focusKey = null;
+  }
+
+  var toastTimer = 0;
+  function toast(msg) {
+    var el = $("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove("show"); }, 3800);
+  }
+  function go(view) { V.view = view; V.confirmReset = false; focusHeading = view !== "map"; window.scrollTo(0, 0); }
+
+  var actions = {
+    island: function (b) {
+      var t = b.dataset.t, i = ORDER.indexOf(t);
+      if (!unlocked(i)) { toast("Pulau ini masih terkunci. Kumpulkan " + NEED + " bintang di pulau sebelumnya."); return; }
+      V.topic = t; go("island");
+    },
+    "back-map": function () { go("map"); },
+    begin: function () { go("map"); },
+    finish: function () { go("end"); },
+    again: function () { S = { stars: {} }; V.topic = null; V.id = null; go("start"); toast("Game disegarkan. Siap berlayar lagi!"); },
+    "back-island": function () { V.topic = FACT_BY_ID[V.id] ? FACT_BY_ID[V.id].t : V.topic; go("island"); },
+    start: function (b) { V.id = b.dataset.id; V.step = "read"; V.why = false; V.picked = null; go("stage"); },
+    why: function () { V.why = !V.why; focusKey = "why"; },
+    test: function () {
+      if (statusOf(V.id) !== "open") return;
+      V.step = "q"; V.order = shuffle([0, 1, 2]); V.picked = null; V.right = false; focusHeading = true;
+    },
+    answer: function (b) {
+      if (V.picked !== null || statusOf(V.id) !== "open") return;
+      var f = FACT_BY_ID[V.id], q = QS[V.id], k = +b.dataset.o;
+      V.picked = k;
+      V.right = V.order[k] === q.a;
+      var before = starsOf(f.t);
+      if (V.right) {
+        S.stars[V.id] = { s: "ok" };
+        toast("Tepat! Kamu dapat 1 bintang.");
+        var ti = ORDER.indexOf(f.t);
+        if (before < NEED && starsOf(f.t) >= NEED && ti < ORDER.length - 1) toast("Pulau " + TOPICS[ORDER[ti + 1]].name + " terbuka!");
+      } else {
+        S.stars[V.id] = { s: "miss", d: today() };
+        toast("Belum tepat, jadi tidak ada bintang. Baca penjelasannya.");
+      }
+      var lst = topicFacts(f.t); focusKey = lst.indexOf(f) < lst.length - 1 ? "next" : "done";
+    },
+    next: function () {
+      var f = FACT_BY_ID[V.id], list = topicFacts(f.t), idx = list.indexOf(f);
+      if (idx < list.length - 1) { V.id = list[idx + 1].id; V.step = "read"; V.why = false; V.picked = null; focusHeading = true; window.scrollTo(0, 0); }
+    },
+    reset: function () { V.confirmReset = true; focusKey = "reset-yes"; },
+    "reset-no": function () { V.confirmReset = false; focusKey = "reset"; },
+    "reset-yes": function () { S = { stars: {} }; V.confirmReset = false; toast("Kemajuan dihapus. Selamat berlayar lagi!"); }
+  };
+
+  function handle(el) {
+    var fn = actions[el.dataset.act];
+    if (!fn || el.disabled) return;
+    if (!focusKey) focusKey = el.dataset.key || null;
+    fn(el);
+    save();
+    renderAll();
+  }
+  document.addEventListener("click", function (e) {
+    var el = e.target.closest("[data-act]");
+    if (el) { focusKey = el.dataset.key || null; handle(el); }
+  });
+  document.addEventListener("keydown", function (e) {
+    if ((e.key === "Enter" || e.key === " ") && e.target.classList && e.target.classList.contains("node")) {
+      e.preventDefault();
+      handle(e.target);
+    }
+  });
+
+  renderAll();
+})();
+</script>
+
+</body></html>
